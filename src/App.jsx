@@ -8,7 +8,7 @@ const App = () => {
   const [user, setUser] = useState(null)
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
- 
+  const [newBlog,setNewBlog] = useState({'title':'','author':'','url':''}) 
 
   useEffect(() => {
     blogService.getAll().then(blogs =>
@@ -34,6 +34,7 @@ const App = () => {
       const user = await loginService.login({username,password})
   
       window.localStorage.setItem('loggedUser',JSON.stringify(user))
+      blogService.setToken(user.token)
       setUser(user)
       setUsername('')
       setPassword('')
@@ -47,13 +48,19 @@ const App = () => {
 
   }
 
-  const handleUsernameChange = (event) => {
-    setUsername(event.target.value)
+const createBlog = async (event) => {
+  event.preventDefault()
+  try {
+    const createdBlog = await blogService.create(newBlog)
+    
+    setBlogs(blogs.concat(createdBlog))
+    setNewBlog({'title':'','author':'','url':''})
+  }
+  catch(error){
+    console.error('Error creating blog:', error)
   }
 
-  const handlePasswordChange = (event) => {
-    setPassword(event.target.value)
-  }
+}
 
 const logout = () => {
   window.localStorage.removeItem('loggedUser')
@@ -65,26 +72,47 @@ const loginForm = () => {
     <form onSubmit={handleLogin}>
     <h2>log in to application</h2>
     <div>
-      username <input type="text" name="username" value={username} onChange={handleUsernameChange} />
+      username <input type="text" name="username" value={username} onChange={({target}) => {setUsername(target.value)}} />
     </div>
     <div>
-      password <input type="password" name="password" value={password} onChange={handlePasswordChange}/>
+      password <input type="password" name="password" value={password} onChange={({target}) => {setPassword(target.value)}}/>
     </div>
     <button type="submit">login</button>
   </form>
   )
 }
-
+const CreateForm = () => {
+  return (
+      <div>
+          <h2>create new blog</h2>
+          <form onSubmit={createBlog}>
+            <div>
+                title <input type="text" name="title" value={newBlog.title} onChange={({target}) => {setNewBlog({...newBlog,"title":target.value})}} />
+            </div>
+            <div>
+                author <input type="text" name="author" value={newBlog.author} onChange={({target}) => {setNewBlog({...newBlog,"author":target.value})}} />
+            </div>
+            <div>
+                url <input type="text" name="url" value={newBlog.url} onChange={({target}) => {setNewBlog({...newBlog,"url":target.value})}} />
+            </div>
+            <button type='submit'>create</button>
+          </form>
+      </div>
+  )
+}
 const blogList = () => {
   return (
     <>
     
     <h2>blogs</h2>
     <p>{user.name} logged in</p>
+    <button onClick={logout}>Log out</button>
+
+    {CreateForm()}
     {blogs.map(blog =>
       <Blog key={blog.id} blog={blog} />
     )}
-    <button onClick={logout}>Log out</button>
+    
     </>
   )
 }
